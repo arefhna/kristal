@@ -16,6 +16,7 @@ import '../painters/background_painter.dart';
 import '../painters/effects_painter.dart';
 import '../widgets/board_widget.dart';
 import '../widgets/combo_text_widget.dart';
+import '../widgets/pause_overlay.dart';
 import '../widgets/piece_tray.dart';
 import '../widgets/score_display.dart';
 
@@ -41,10 +42,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
   final ScreenShake _shake = ScreenShake();
   final List<LineFlash> _flashes = <LineFlash>[];
   final List<ComboText> _comboTexts = <ComboText>[];
-  final Random _random = Random();
 
   int _lastEffectTrigger = 0;
   int _lastComboTrigger = 0;
+  bool _paused = false;
+  bool _statsRecorded = false;
 
   @override
   void initState() {
@@ -63,6 +65,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
         ? 0.016
         : (elapsed - _lastTick).inMicroseconds / 1000000.0;
     _lastTick = elapsed;
+
+    if (_paused) return;
 
     _particles.update(dt);
     _shake.update(dt);
@@ -92,6 +96,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   }
 
   void _handleDragStart(Piece piece, int slotIndex, Offset pointer) {
+    if (_paused) return;
     _updateBoardGeometry();
     ref.read(gameControllerProvider.notifier).onDragStart(
           piece: piece,
@@ -101,6 +106,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   }
 
   void _handleDragUpdate(Offset pointer) {
+    if (_paused) return;
     final controller = ref.read(gameControllerProvider.notifier);
     final DragInfo? drag = ref.read(gameControllerProvider).drag;
     if (drag == null) return;
@@ -124,6 +130,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   }
 
   void _handleDragEnd() {
+    if (_paused) return;
     final controller = ref.read(gameControllerProvider.notifier);
     final DragInfo? drag = ref.read(gameControllerProvider).drag;
     if (drag == null) return;
@@ -191,10 +198,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
     if (s.comboLabel.isNotEmpty) {
       _comboTexts.add(
-        ComboText(
-          text: s.comboLabel,
-          color: palette.accent,
-        ),
+        ComboText(text: s.comboLabel, color: palette.accent),
       );
     }
 
@@ -203,6 +207,27 @@ class _GameScreenState extends ConsumerState<GameScreen>
       intensity: intensity.clamp(0.6, 2.0),
       duration: 0.35,
     );
+  }
+
+  Future<void> _recordStatsIfNeeded(GameState s) async {
+    if (!s.isGameOver || _statsRecorded) return;
+    _statsRecorded = true;
+    await ref.read(statsControllerProvider.notifier).recordGameEnd(
+          score: s.score,
+          lines: ref.read(gameControllerProvider.notifier).engine.totalLines,
+          longestCombo: s.bestCombo,
+        );
+  }
+
+  void _restartGame() {
+    _particles.clear();
+    _flashes.clear();
+    _comboTexts.clear();
+    _lastEffectTrigger = 0;
+    _lastComboTrigger = 0;
+    _statsRecorded = false;
+    _paused = false;
+    ref.read(gameControllerProvider.notifier).restart();
   }
 
   @override
@@ -216,6 +241,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     ref.listen<GameState>(gameControllerProvider, (prev, next) {
       _triggerEffectsForLastPlacement(next, palette);
       _triggerComboEffects(next, palette);
+      _recordStatsIfNeeded(next);
     });
 
     final bool isGameOver = ref.watch(
@@ -246,9 +272,37 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 offset: shakeOffset,
                 child: Column(
                   children: <Widget>[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: padding),
+                      child: Row(
+                        children: <Widget>[
+                          IconButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            icon: Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              color: palette.textPrimary,
+                              size: 20,
+                            ),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            onPressed: () {
+                              setState(() => _paused = true);
+                            },
+                            icon: Icon(
+                              Icons.pause_rounded,
+                              color: palette.textPrimary,
+                              size: 28,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     const ScoreDisplay(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: padding),
                       child: RepaintBoundary(
@@ -308,57 +362,94 @@ class _GameScreenState extends ConsumerState<GameScreen>
                   ),
                 ),
               ),
+              if (_paused && !isGameOver)
+                Positioned.fill(
+                  child: PauseOverlay(
+                    palette: palette,
+                    onResume: () => setState(() => _paused = false),
+                    onRestart: _restartGame,
+                    onHome: () => Navigator.of(context).pop(),
+                  ),
+                ),
               if (isGameOver)
                 Positioned.fill(
                   child: Container(
-                    color: Colors.black.withValues(alpha: 0.6),
+                    color: Colors.black.withValues(alpha: 0.65),
                     child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Text(
-                            'OYUN BİTDİ',
-                            style: TextStyle(
-                              color: palette.textPrimary,
-                              fontSize: 32,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 3.0,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton(
-                            onPressed: () {
-                              _particles.clear();
-                              _flashes.clear();
-                              _comboTexts.clear();
-                              _lastEffectTrigger = 0;
-                              _lastComboTrigger = 0;
-                              ref
-                                  .read(gameControllerProvider.notifier)
-                                  .restart();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: palette.accent,
-                              foregroundColor:
-                                  palette.backgroundGradient.first,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 32,
-                                vertical: 14,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                            ),
-                            child: const Text(
-                              'YENİDƏN',
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            Text(
+                              'OYUN BİTDİ',
+                              textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
+                                color: palette.textPrimary,
+                                fontSize: 30,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 4.0,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'XAL',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: palette.textSecondary,
+                                fontSize: 12,
+                                letterSpacing: 3.0,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${ref.watch(gameControllerProvider).score}',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: palette.textPrimary,
+                                fontSize: 52,
+                                fontWeight: FontWeight.w800,
                                 letterSpacing: 1.5,
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 32),
+                            ElevatedButton(
+                              onPressed: _restartGame,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: palette.accent,
+                                foregroundColor:
+                                    palette.backgroundGradient.first,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              child: const Text(
+                                'YENİDƏN',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 2.0,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: Text(
+                                'MENYU',
+                                style: TextStyle(
+                                  color: palette.textSecondary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 2.0,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
