@@ -1,10 +1,10 @@
-import '../core/constants/game_constants.dart';
 import 'generator/piece_generator.dart';
 import 'logic/difficulty.dart';
 import 'logic/line_clearer.dart';
 import 'logic/placement_validator.dart';
 import 'logic/scoring.dart';
 import 'models/board.dart';
+import 'models/cell.dart';
 import 'models/piece.dart';
 import 'models/placement_result.dart';
 
@@ -28,6 +28,7 @@ class GameEngine {
   int _bestCombo = 0;
   int _totalPlacements = 0;
   int _totalLines = 0;
+  int _totalIceBroken = 0;
   List<Piece?> _currentBatch = <Piece?>[];
   bool _gameOver = false;
 
@@ -37,17 +38,19 @@ class GameEngine {
   int get bestCombo => _bestCombo;
   int get totalPlacements => _totalPlacements;
   int get totalLines => _totalLines;
+  int get totalIceBroken => _totalIceBroken;
   List<Piece?> get currentBatch => List<Piece?>.unmodifiable(_currentBatch);
   bool get isGameOver => _gameOver;
   double get difficultyValue => _difficulty.compute(_score);
 
-  void start() {
-    _board = Board.empty();
+  void start({Board? initialBoard}) {
+    _board = initialBoard ?? Board.empty();
     _score = 0;
     _combo = 0;
     _bestCombo = 0;
     _totalPlacements = 0;
     _totalLines = 0;
+    _totalIceBroken = 0;
     _gameOver = false;
     _difficulty.reset();
     _generator.reset();
@@ -99,6 +102,7 @@ class GameEngine {
       isFullClear: isFullClear,
       boardSize: _board.size,
       comboCount: comboForMultiplier,
+      specialBonus: clearResult.iceBroken * 20,
     );
 
     _board = finalBoard;
@@ -107,6 +111,7 @@ class GameEngine {
     if (_combo > _bestCombo) _bestCombo = _combo;
     _totalPlacements += 1;
     _totalLines += clearResult.linesCleared;
+    _totalIceBroken += clearResult.iceBroken;
     _difficulty.recordPlacement(cleared: clearResult.linesCleared > 0);
 
     _currentBatch = List<Piece?>.from(_currentBatch);
@@ -136,6 +141,7 @@ class GameEngine {
       comboCount: _combo,
       totalScore: gained,
       isFullClear: isFullClear,
+      iceBroken: clearResult.iceBroken,
     );
   }
 
@@ -156,4 +162,8 @@ class GameEngine {
       _currentBatch.where((p) => p != null).toList(growable: false);
 
   int activePieceCount() => activePieces.length;
+
+  void forceGameOver() => _gameOver = true;
+
+  void restoreBoard(Board board) => _board = board;
 }
