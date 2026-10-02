@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/theme_palette.dart';
 import '../../data/models/daily_record.dart';
 import '../../game/daily_seed.dart';
+import '../../state/game/game_controller.dart';
 import '../../state/providers.dart';
 import '../painters/background_painter.dart';
 import 'game_screen.dart';
@@ -100,7 +101,7 @@ class DailyScreen extends ConsumerWidget {
                             .startDaily(todaySeed);
                         Navigator.of(context).push(
                           MaterialPageRoute<void>(
-                            builder: (_) => const GameScreen(
+                            builder: (_) => GameScreen(
                               mode: GameMode.daily,
                             ),
                           ),
