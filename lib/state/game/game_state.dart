@@ -66,10 +66,10 @@ class GameState {
   final int lastGain;
   final int batchKey;
 
-  factory GameState.initial() {
-    return const GameState(
-      board: null,
-      batch: <Piece?>[],
+  factory GameState.empty() {
+    return GameState(
+      board: Board.empty(),
+      batch: const <Piece?>[],
       score: 0,
       combo: 0,
       bestCombo: 0,
@@ -105,7 +105,12 @@ class GameState {
     );
   }
 
-  factory GameState.fromEngine(GameEngine engine, {DragInfo? drag, int? lastGain, int? batchKey}) {
+  factory GameState.fromEngine(
+    GameEngine engine, {
+    DragInfo? drag,
+    int? lastGain,
+    int? batchKey,
+  }) {
     return GameState(
       board: engine.board,
       batch: engine.currentBatch,
