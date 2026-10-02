@@ -15,6 +15,7 @@ class PlacementResult {
     required this.comboCount,
     required this.totalScore,
     required this.isFullClear,
+    required this.iceBroken,
   });
 
   final bool isValid;
@@ -30,6 +31,7 @@ class PlacementResult {
   final int comboCount;
   final int totalScore;
   final bool isFullClear;
+  final int iceBroken;
 
   factory PlacementResult.invalid(Board board) {
     return PlacementResult(
@@ -46,10 +48,7 @@ class PlacementResult {
       comboCount: 0,
       totalScore: 0,
       isFullClear: false,
+      iceBroken: 0,
     );
   }
-
-  @override
-  String toString() =>
-      'PlacementResult(valid=$isValid, lines=$linesCleared, score=$totalScore, combo=$comboCount)';
 }
