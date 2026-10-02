@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'block_colors.dart';
 
-enum ThemeId { kristal, forest, night }
+enum ThemeId { kristal, forest, night, sunrise, ocean }
 
 class ThemePalette {
   const ThemePalette({
@@ -16,6 +16,8 @@ class ThemePalette {
     required this.boardBackground,
     required this.boardCell,
     required this.ghostColor,
+    this.unlockStarsRequired = 0,
+    this.unlockAchievementId,
   });
 
   final ThemeId id;
@@ -28,6 +30,10 @@ class ThemePalette {
   final Color boardBackground;
   final Color boardCell;
   final Color ghostColor;
+  final int unlockStarsRequired;
+  final String? unlockAchievementId;
+
+  bool get isLocked => unlockStarsRequired > 0 || unlockAchievementId != null;
 
   static const ThemePalette kristal = ThemePalette(
     id: ThemeId.kristal,
@@ -61,6 +67,7 @@ class ThemePalette {
     boardBackground: Color(0x33223322),
     boardCell: Color(0x22FFFFFF),
     ghostColor: Color(0x88FFFFFF),
+    unlockStarsRequired: 10,
   );
 
   static const ThemePalette night = ThemePalette(
@@ -78,12 +85,51 @@ class ThemePalette {
     boardBackground: Color(0x33112233),
     boardCell: Color(0x22FFFFFF),
     ghostColor: Color(0x88AACCFF),
+    unlockStarsRequired: 30,
+  );
+
+  static const ThemePalette sunrise = ThemePalette(
+    id: ThemeId.sunrise,
+    name: 'Günəş',
+    backgroundGradient: <Color>[
+      Color(0xFF3A1F1A),
+      Color(0xFF5A2F20),
+      Color(0xFF3A1F1A),
+    ],
+    blockColors: BlockColors.sunrise,
+    accent: Color(0xFFFFD4A8),
+    textPrimary: Color(0xFFFFF5EC),
+    textSecondary: Color(0xFFD8B8A0),
+    boardBackground: Color(0x33443322),
+    boardCell: Color(0x22FFFFFF),
+    ghostColor: Color(0x88FFD9B0),
+    unlockStarsRequired: 60,
+  );
+
+  static const ThemePalette ocean = ThemePalette(
+    id: ThemeId.ocean,
+    name: 'Okean',
+    backgroundGradient: <Color>[
+      Color(0xFF0A1F2A),
+      Color(0xFF102F40),
+      Color(0xFF0A1F2A),
+    ],
+    blockColors: BlockColors.ocean,
+    accent: Color(0xFF8FD4E8),
+    textPrimary: Color(0xFFE8F5FF),
+    textSecondary: Color(0xFF9FC8D8),
+    boardBackground: Color(0x33122A33),
+    boardCell: Color(0x22FFFFFF),
+    ghostColor: Color(0x88C0E8FF),
+    unlockAchievementId: 'master_10_games',
   );
 
   static const List<ThemePalette> all = <ThemePalette>[
     kristal,
     forest,
     night,
+    sunrise,
+    ocean,
   ];
 
   static ThemePalette byId(ThemeId id) {
