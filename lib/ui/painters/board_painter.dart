@@ -75,11 +75,14 @@ class BoardPainter extends CustomPainter {
 
     for (int r = 0; r < n; r++) {
       for (int c = 0; c < n; c++) {
-        if (board.at(r, c).isEmpty) continue;
-        final int colorIndex = board.at(r, c).colorIndex;
-        final Color blockColor = colorIndex >= 0 && colorIndex < palette.blockColors.length
-            ? palette.blockColors[colorIndex]
-            : palette.blockColors.first;
+        final cell = board.at(r, c);
+        if (cell.isEmpty) continue;
+
+        final int colorIndex = cell.colorIndex;
+        final Color blockColor =
+            colorIndex >= 0 && colorIndex < palette.blockColors.length
+                ? palette.blockColors[colorIndex]
+                : palette.blockColors.first;
 
         final Rect cellRect = Rect.fromLTWH(
           c * cellSize + gap,
@@ -93,6 +96,8 @@ class BoardPainter extends CustomPainter {
           rect: cellRect,
           color: blockColor,
           radius: radius,
+          isIce: cell.isIce,
+          iceLayers: cell.iceLayers,
         );
       }
     }
