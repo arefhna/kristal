@@ -1,0 +1,112 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APK and AAB
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Create Android platform
+        run: flutter create . --platforms=android --project-name=kristal
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate launcher icons
+        run: dart run flutter_launcher_icons
+
+      - name: Lock portrait orientation in AndroidManifest
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          if [ -f "$MANIFEST" ]; then
+            sed -i 's|android:label="kristal"|android:label="Kristal"|g' "$MANIFEST"
+            sed -i 's|android:label="Kristal"|android:label="Kristal"\n            android:screenOrientation="portrait"|g' "$MANIFEST"
+          fi
+
+      - name: Update app label in build.gradle
+        run: |
+          GRADLE=android/app/build.gradle
+          if [ -f "$GRADLE" ]; then
+            sed -i 's|applicationId "com.example.kristal"|applicationId "com.kristal.game"|g' "$GRADLE"
+          fi
+          GRADLE_KTS=android/app/build.gradle.kts
+          if [ -f "$GRADLE_KTS" ]; then
+            sed -i 's|applicationId = "com.example.kristal"|applicationId = "com.kristal.game"|g' "$GRADLE_KTS"
+          fi
+
+      - name: Enable minSdk 21
+        run: |
+          GRADLE=android/app/build.gradle
+          if [ -f "$GRADLE" ]; then
+            sed -i 's|minSdkVersion flutter.minSdkVersion|minSdkVersion 21|g' "$GRADLE"
+          fi
+          GRADLE_KTS=android/app/build.gradle.kts
+          if [ -f "$GRADLE_KTS" ]; then
+            sed -i 's|minSdk = flutter.minSdkVersion|minSdk = 21|g' "$GRADLE_KTS"
+          fi
+
+      - name: Flutter analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        continue-on-error: true
+
+      - name: Flutter test
+        run: flutter test
+        continue-on-error: true
+
+      - name: Build APK (release)
+        run: flutter build apk --release --split-per-abi
+
+      - name: Build AAB (release)
+        run: flutter build appbundle --release
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kristal-apk
+          path: build/app/outputs/flutter-apk/*.apk
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kristal-aab
+          path: build/app/outputs/bundle/release/*.aab
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Summary
+        run: |
+          echo "## Build uğurlu ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**APK faylları:**" >> $GITHUB_STEP_SUMMARY
+          ls -lh build/app/outputs/flutter-apk/ 2>/dev/null || echo "APK tapılmadı" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**AAB faylları:**" >> $GITHUB_STEP_SUMMARY
+          ls -lh build/app/outputs/bundle/release/ 2>/dev/null || echo "AAB tapılmadı" >> $GITHUB_STEP_SUMMARY
