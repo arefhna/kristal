@@ -18,8 +18,11 @@ class StorageKeys {
   static const String saveBestCombo = 'save_best_combo';
   static const String saveExists = 'save_exists';
 
-  static const String dailyDate = 'daily_date';
-  static const String dailyBest = 'daily_best';
+  static const String dailyCurrentDate = 'daily_current_date';
+  static const String dailyBestScore = 'daily_best_score';
   static const String dailyStreak = 'daily_streak';
-  static const String dailyLastPlayed = 'daily_last_played';
+  static const String dailyLastPlayedDate = 'daily_last_played_date';
+  static const String dailyTotalPlayed = 'daily_total_played';
+
+  static String dailyScoreForDate(String dateKey) => 'daily_score_$dateKey';
 }
