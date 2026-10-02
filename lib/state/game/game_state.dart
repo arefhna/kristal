@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 import '../../game/game_engine.dart';
 import '../../game/models/board.dart';
@@ -38,19 +38,6 @@ class DragInfo {
       isValidTarget: isValidTarget ?? this.isValidTarget,
     );
   }
-}
-
-@immutable
-class ScorePopup {
-  const ScorePopup({
-    required this.value,
-    required this.color,
-    required this.spawnTime,
-  });
-
-  final int value;
-  final Color color;
-  final Duration spawnTime;
 }
 
 @immutable
