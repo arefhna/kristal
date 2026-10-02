@@ -43,6 +43,18 @@ class Board {
     return count;
   }
 
+  int countOfType(CellType type) {
+    int count = 0;
+    for (final row in _cells) {
+      for (final cell in row) {
+        if (cell.type == type) count++;
+      }
+    }
+    return count;
+  }
+
+  int get iceCount => countOfType(CellType.ice);
+
   double get fillRatio => filledCount / (size * size);
 
   Board withCells(List<List<int>> absoluteCells, int colorIndex) {
@@ -51,6 +63,21 @@ class Board {
         .toList(growable: false);
     for (final ac in absoluteCells) {
       next[ac[0]][ac[1]] = Cell(type: CellType.normal, colorIndex: colorIndex);
+    }
+    return Board._(next);
+  }
+
+  Board withIceCells(List<List<int>> absoluteCells) {
+    final List<List<Cell>> next = _cells
+        .map((row) => List<Cell>.from(row))
+        .toList(growable: false);
+    for (final ac in absoluteCells) {
+      final Cell existing = next[ac[0]][ac[1]];
+      next[ac[0]][ac[1]] = Cell(
+        type: CellType.ice,
+        colorIndex: existing.isEmpty ? 0 : existing.colorIndex,
+        iceLayers: existing.iceLayers + 1,
+      );
     }
     return Board._(next);
   }
@@ -66,6 +93,24 @@ class Board {
     }
     for (final c in cols) {
       for (int r = 0; r < size; r++) {
+        next[r][c] = Cell.empty;
+      }
+    }
+    return Board._(next);
+  }
+
+  Board withFilledCellsCleared(Set<List<int>> coords) {
+    final List<List<Cell>> next = _cells
+        .map((row) => List<Cell>.from(row))
+        .toList(growable: false);
+    for (final coord in coords) {
+      final int r = coord[0];
+      final int c = coord[1];
+      if (!inBounds(r, c)) continue;
+      final Cell existing = next[r][c];
+      if (existing.isIce && existing.iceLayers > 1) {
+        next[r][c] = existing.copyWith(iceLayers: existing.iceLayers - 1);
+      } else {
         next[r][c] = Cell.empty;
       }
     }
