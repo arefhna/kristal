@@ -44,15 +44,12 @@ class _DraggablePieceState extends State<DraggablePiece> {
       behavior: HitTestBehavior.opaque,
       onPanStart: (details) {
         setState(() => _dragging = true);
-        final RenderBox box = context.findRenderObject()! as RenderBox;
-        final Offset local = box.globalToLocal(details.globalPosition);
         widget.onDragStart?.call(
           widget.piece,
           widget.slotIndex,
           details.globalPosition,
         );
         widget.onDragUpdate?.call(details.globalPosition);
-        _ = local;
       },
       onPanUpdate: (details) {
         widget.onDragUpdate?.call(details.globalPosition);
@@ -66,11 +63,15 @@ class _DraggablePieceState extends State<DraggablePiece> {
         widget.onDragCancel?.call();
       },
       child: SizedBox(
-        width: w < widget.cellSize * 1.5 ? widget.cellSize * 3 : w + widget.cellSize,
-        height: h < widget.cellSize * 1.5 ? widget.cellSize * 3 : h + widget.cellSize * 0.2,
+        width: w < widget.cellSize * 1.5
+            ? widget.cellSize * 3
+            : w + widget.cellSize,
+        height: h < widget.cellSize * 1.5
+            ? widget.cellSize * 3
+            : h + widget.cellSize * 0.2,
         child: Center(
           child: Opacity(
-            opacity: widget.hidden ? 0.25 : 1.0,
+            opacity: widget.hidden || _dragging ? 0.25 : 1.0,
             child: CustomPaint(
               size: Size(w, h),
               painter: PiecePainter(
