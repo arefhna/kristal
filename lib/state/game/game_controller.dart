@@ -3,27 +3,40 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/services/haptics.dart';
 import '../../game/game_engine.dart';
+import '../../game/generator/piece_generator.dart';
 import '../../game/models/board.dart';
 import '../../game/models/piece.dart';
 import '../../game/models/placement_result.dart';
 import 'game_state.dart';
 
+enum GameMode { classic, daily }
+
 class GameController extends Notifier<GameState> {
-  late final GameEngine _engine;
+  late GameEngine _engine;
+  GameMode _mode = GameMode.classic;
+  int _dailySeed = 0;
   int _batchKeyCounter = 0;
   int _effectTrigger = 0;
   int _comboTrigger = 0;
 
   @override
   GameState build() {
-    _engine = GameEngine();
+    _engine = _buildEngine(GameMode.classic, 0);
     _engine.start();
     return GameState.fromEngine(_engine, batchKey: _batchKeyCounter);
   }
 
-  GameEngine get engine => _engine;
+  GameEngine _buildEngine(GameMode mode, int dailySeed) {
+    if (mode == GameMode.daily) {
+      return GameEngine(generator: SeededPieceGenerator(dailySeed));
+    }
+    return GameEngine();
+  }
 
-  void restart() {
+  void startClassic() {
+    _mode = GameMode.classic;
+    _dailySeed = 0;
+    _engine = _buildEngine(GameMode.classic, 0);
     _engine.start();
     _batchKeyCounter++;
     _effectTrigger++;
@@ -35,6 +48,34 @@ class GameController extends Notifier<GameState> {
       comboTrigger: _comboTrigger,
     );
   }
+
+  void startDaily(int seed) {
+    _mode = GameMode.daily;
+    _dailySeed = seed;
+    _engine = _buildEngine(GameMode.daily, seed);
+    _engine.start();
+    _batchKeyCounter++;
+    _effectTrigger++;
+    _comboTrigger++;
+    state = GameState.fromEngine(
+      _engine,
+      batchKey: _batchKeyCounter,
+      effectTrigger: _effectTrigger,
+      comboTrigger: _comboTrigger,
+    );
+  }
+
+  void restart() {
+    if (_mode == GameMode.daily) {
+      startDaily(_dailySeed);
+    } else {
+      startClassic();
+    }
+  }
+
+  GameMode get mode => _mode;
+  int get dailySeed => _dailySeed;
+  GameEngine get engine => _engine;
 
   void onDragStart({
     required Piece piece,
