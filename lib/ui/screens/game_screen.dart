@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/theme_palette.dart';
 import '../../game/models/piece.dart';
+import '../../state/daily/daily_controller.dart';
+import '../../state/game/game_controller.dart';
 import '../../state/game/game_state.dart';
 import '../../state/providers.dart';
 import '../effects/combo_text.dart';
@@ -21,7 +23,9 @@ import '../widgets/piece_tray.dart';
 import '../widgets/score_display.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
-  const GameScreen({super.key});
+  const GameScreen({super.key, this.mode = GameMode.classic});
+
+  final GameMode mode;
 
   @override
   ConsumerState<GameScreen> createState() => _GameScreenState();
@@ -52,6 +56,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
   void initState() {
     super.initState();
     _ticker = createTicker(_onTick)..start();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (widget.mode == GameMode.classic) {
+        ref.read(gameControllerProvider.notifier).startClassic();
+      }
+    });
   }
 
   @override
@@ -212,11 +223,18 @@ class _GameScreenState extends ConsumerState<GameScreen>
   Future<void> _recordStatsIfNeeded(GameState s) async {
     if (!s.isGameOver || _statsRecorded) return;
     _statsRecorded = true;
+
+    final int lines = ref.read(gameControllerProvider.notifier).engine.totalLines;
+
     await ref.read(statsControllerProvider.notifier).recordGameEnd(
           score: s.score,
-          lines: ref.read(gameControllerProvider.notifier).engine.totalLines,
+          lines: lines,
           longestCombo: s.bestCombo,
         );
+
+    if (widget.mode == GameMode.daily) {
+      await ref.read(dailyControllerProvider.notifier).recordScore(s.score);
+    }
   }
 
   void _restartGame() {
@@ -250,6 +268,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
     final Offset shakeOffset = _shake.currentOffset;
     final Offset boardOrigin = Offset(_boardLeft, _boardTop);
+
+    final bool isDaily = widget.mode == GameMode.daily;
 
     return Scaffold(
       body: Container(
@@ -287,7 +307,21 @@ class _GameScreenState extends ConsumerState<GameScreen>
                               size: 20,
                             ),
                           ),
-                          const Spacer(),
+                          if (isDaily)
+                            Expanded(
+                              child: Text(
+                                'GÜNDƏLİK',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: palette.textSecondary,
+                                  fontSize: 11,
+                                  letterSpacing: 3.0,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            )
+                          else
+                            const Spacer(),
                           IconButton(
                             onPressed: () {
                               setState(() => _paused = true);
@@ -383,11 +417,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: <Widget>[
                             Text(
-                              'OYUN BİTDİ',
+                              isDaily ? 'GÜNDƏLİK BİTDİ' : 'OYUN BİTDİ',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: palette.textPrimary,
-                                fontSize: 30,
+                                fontSize: 26,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 4.0,
                               ),
@@ -439,7 +473,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                             TextButton(
                               onPressed: () => Navigator.of(context).pop(),
                               child: Text(
-                                'MENYU',
+                                'GERİ',
                                 style: TextStyle(
                                   color: palette.textSecondary,
                                   fontSize: 14,
