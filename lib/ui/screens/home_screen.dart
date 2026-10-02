@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/theme_palette.dart';
+import '../../data/models/daily_record.dart';
 import '../../data/models/player_stats.dart';
 import '../../state/providers.dart';
 import '../painters/background_painter.dart';
 import '../widgets/menu_button.dart';
+import 'daily_screen.dart';
 import 'game_screen.dart';
 import 'settings_screen.dart';
 import 'stats_screen.dart';
@@ -18,6 +20,9 @@ class HomeScreen extends ConsumerWidget {
     final ThemePalette palette = ref.watch(themePaletteProvider);
     final PlayerStats stats = ref.watch(
       statsControllerProvider.select((s) => s.stats),
+    );
+    final DailyProgress daily = ref.watch(
+      dailyControllerProvider.select((s) => s.progress),
     );
 
     return Scaffold(
@@ -37,18 +42,18 @@ class HomeScreen extends ConsumerWidget {
                   painter: BackgroundPainter(palette: palette),
                 ),
               ),
-              Padding(
+              SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 28),
                     Text(
                       'KRISTAL',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: palette.textPrimary,
-                        fontSize: 44,
+                        fontSize: 42,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 8.0,
                         shadows: <Shadow>[
@@ -70,9 +75,9 @@ class HomeScreen extends ConsumerWidget {
                         letterSpacing: 4.0,
                       ),
                     ),
-                    const SizedBox(height: 40),
-                    _BestScoreCard(stats: stats, palette: palette),
                     const SizedBox(height: 28),
+                    _BestScoreCard(stats: stats, palette: palette),
+                    const SizedBox(height: 22),
                     MenuButton(
                       label: 'OYNA',
                       subtitle: 'Klassik rejim',
@@ -83,6 +88,22 @@ class HomeScreen extends ConsumerWidget {
                         Navigator.of(context).push(
                           MaterialPageRoute<void>(
                             builder: (_) => const GameScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    MenuButton(
+                      label: 'GÜNDƏLİK ÇAĞIRIŞ',
+                      subtitle: daily.hasPlayedToday
+                          ? 'Bugün: ${daily.todayBestScore}  •  ${daily.currentStreak} gün seriya'
+                          : 'Hər kəs üçün eyni lövhə',
+                      icon: Icons.calendar_today_rounded,
+                      palette: palette,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const DailyScreen(),
                           ),
                         );
                       },
@@ -113,7 +134,7 @@ class HomeScreen extends ConsumerWidget {
                         );
                       },
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 32),
                     Center(
                       child: Text(
                         'v0.1.0',
@@ -124,7 +145,7 @@ class HomeScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -185,19 +206,19 @@ class _BestScoreCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
-              _MiniStat(label: 'OYUN', value: '${stats.totalGames}'),
+              _MiniStat(label: 'OYUN', value: '${stats.totalGames}', palette: palette),
               Container(
                 width: 1,
                 height: 28,
                 color: Colors.white.withValues(alpha: 0.1),
               ),
-              _MiniStat(label: 'XƏTT', value: '${stats.totalLines}'),
+              _MiniStat(label: 'XƏTT', value: '${stats.totalLines}', palette: palette),
               Container(
                 width: 1,
                 height: 28,
                 color: Colors.white.withValues(alpha: 0.1),
               ),
-              _MiniStat(label: 'COMBO', value: '${stats.longestCombo}'),
+              _MiniStat(label: 'COMBO', value: '${stats.longestCombo}', palette: palette),
             ],
           ),
         ],
@@ -207,15 +228,18 @@ class _BestScoreCard extends StatelessWidget {
 }
 
 class _MiniStat extends StatelessWidget {
-  const _MiniStat({required this.label, required this.value});
+  const _MiniStat({
+    required this.label,
+    required this.value,
+    required this.palette,
+  });
 
   final String label;
   final String value;
+  final ThemePalette palette;
 
   @override
   Widget build(BuildContext context) {
-    final ThemePalette palette =
-        ProviderScope.containerOf(context).read(themePaletteProvider);
     return Column(
       children: <Widget>[
         Text(
