@@ -15,9 +15,9 @@ import '../effects/line_flash.dart';
 import '../effects/particle_system.dart';
 import '../effects/screen_shake.dart';
 import '../painters/background_painter.dart';
+import '../painters/block_painter.dart';
 import '../painters/board_painter.dart';
 import '../painters/effects_painter.dart';
-import '../widgets/piece_tray.dart';
 
 class AdventureGameScreen extends ConsumerStatefulWidget {
   const AdventureGameScreen({super.key, required this.levelId});
@@ -116,6 +116,8 @@ class _AdventureGameScreenState extends ConsumerState<AdventureGameScreen>
 
   void _handleDragUpdate(Offset pointer) {
     if (_paused || _dragPiece == null || !_engine.isPlaying) return;
+    if (_cellSize <= 0) return;
+
     final double lift = _cellSize * 1.15;
     final double pieceLeft =
         pointer.dx - (_dragPiece!.width * _cellSize) / 2;
@@ -167,6 +169,7 @@ class _AdventureGameScreenState extends ConsumerState<AdventureGameScreen>
   }
 
   void _clearDrag() {
+    if (!mounted) return;
     setState(() {
       _dragPiece = null;
       _dragSlot = -1;
@@ -213,6 +216,21 @@ class _AdventureGameScreenState extends ConsumerState<AdventureGameScreen>
         );
       }
     }
+
+    if (result.iceBroken > 0) {
+      for (final cell in piece.absoluteCells(row, col)) {
+        final double x = _boardLeft + (cell[1] + 0.5) * _cellSize;
+        final double y = _boardTop + (cell[0] + 0.5) * _cellSize;
+        _particles.burstAt(
+          center: Offset(x, y),
+          color: const Color(0xFFB0D4F0),
+          count: 4,
+          baseSpeed: 80,
+          spread: 100,
+          size: 3.0,
+        );
+      }
+    }
   }
 
   Future<void> _recordIfNeeded() async {
@@ -221,7 +239,9 @@ class _AdventureGameScreenState extends ConsumerState<AdventureGameScreen>
 
     if (_engine.status == AdventureStatus.victory) {
       final int stars = _engine.starsEarned();
-      await ref.read(adventureControllerProvider.notifier).recordLevelCompletion(
+      await ref
+          .read(adventureControllerProvider.notifier)
+          .recordLevelCompletion(
             levelId: _level.id,
             stars: stars,
           );
@@ -233,6 +253,7 @@ class _AdventureGameScreenState extends ConsumerState<AdventureGameScreen>
     _flashes.clear();
     _recorded = false;
     _paused = false;
+    _clearDrag();
     _engine.start();
     setState(() {});
   }
@@ -357,8 +378,11 @@ class _AdventureGameScreenState extends ConsumerState<AdventureGameScreen>
                       padding: EdgeInsets.symmetric(horizontal: padding),
                       child: SizedBox(
                         height: cellSize * 5.4,
-                        child: PieceTray(
+                        child: _AdventurePieceTray(
+                          batch: _engine.currentBatch,
                           cellSize: cellSize * 0.55,
+                          palette: palette,
+                          hiddenSlot: _dragSlot,
                           onDragStart: _handleDragStart,
                           onDragUpdate: _handleDragUpdate,
                           onDragEnd: _handleDragEnd,
@@ -420,14 +444,12 @@ class _AdventureGameScreenState extends ConsumerState<AdventureGameScreen>
                     title: 'QƏLƏBƏ!',
                     stars: _engine.starsEarned(),
                     score: _engine.score,
-                    primaryLabel: 'NÖVBƏTİ SƏVİYYƏ',
+                    primaryLabel: 'XƏRİTƏ',
                     onPrimary: () {
                       Navigator.of(context).pop();
                     },
-                    onSecondary: () {
-                      Navigator.of(context).pop();
-                    },
-                    secondaryLabel: 'XƏRİTƏ',
+                    secondaryLabel: 'YENİDƏN',
+                    onSecondary: _restart,
                   ),
                 ),
               if (showDefeat)
@@ -450,17 +472,57 @@ class _AdventureGameScreenState extends ConsumerState<AdventureGameScreen>
                   child: Container(
                     color: Colors.black.withValues(alpha: 0.7),
                     child: Center(
-                      child: TextButton(
-                        onPressed: () => setState(() => _paused = false),
-                        child: Text(
-                          'DAVAM ET',
-                          style: TextStyle(
-                            color: palette.accent,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 3.0,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(
+                            'PAUZA',
+                            style: TextStyle(
+                              color: palette.textPrimary,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 4.0,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 24),
+                          TextButton(
+                            onPressed: () =>
+                                setState(() => _paused = false),
+                            child: Text(
+                              'DAVAM ET',
+                              style: TextStyle(
+                                color: palette.accent,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 3.0,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: _restart,
+                            child: Text(
+                              'YENİDƏN',
+                              style: TextStyle(
+                                color: palette.textSecondary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 2.0,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text(
+                              'XƏRİTƏ',
+                              style: TextStyle(
+                                color: palette.textSecondary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 2.0,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -567,7 +629,7 @@ class _ResultOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black.withValues(alpha: 0.7),
+      color: Colors.black.withValues(alpha: 0.75),
       child: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -655,6 +717,69 @@ class _ResultOverlay extends StatelessWidget {
   }
 }
 
+class _AdventurePieceTray extends StatelessWidget {
+  const _AdventurePieceTray({
+    required this.batch,
+    required this.cellSize,
+    required this.palette,
+    required this.hiddenSlot,
+    required this.onDragStart,
+    required this.onDragUpdate,
+    required this.onDragEnd,
+    required this.onDragCancel,
+  });
+
+  final List<Piece?> batch;
+  final double cellSize;
+  final ThemePalette palette;
+  final int hiddenSlot;
+  final void Function(Piece, int, Offset) onDragStart;
+  final void Function(Offset) onDragUpdate;
+  final VoidCallback onDragEnd;
+  final VoidCallback onDragCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: List<Widget>.generate(3, (i) {
+        final Piece? piece = i < batch.length ? batch[i] : null;
+        if (piece == null) {
+          return SizedBox(width: cellSize * 5, height: cellSize * 5);
+        }
+        final bool hidden = hiddenSlot == i;
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onPanStart: (d) => onDragStart(piece, i, d.globalPosition),
+          onPanUpdate: (d) => onDragUpdate(d.globalPosition),
+          onPanEnd: (_) => onDragEnd(),
+          onPanCancel: onDragCancel,
+          child: SizedBox(
+            width: piece.width * cellSize + cellSize,
+            height: piece.height * cellSize + cellSize * 0.4,
+            child: Center(
+              child: Opacity(
+                opacity: hidden ? 0.25 : 1.0,
+                child: CustomPaint(
+                  size: Size(
+                    piece.width * cellSize,
+                    piece.height * cellSize,
+                  ),
+                  painter: PieceDragPainter(
+                    piece: piece,
+                    palette: palette,
+                    cellSize: cellSize,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
 class PieceDragPainter extends CustomPainter {
   PieceDragPainter({
     required this.piece,
@@ -682,22 +807,19 @@ class PieceDragPainter extends CustomPainter {
         cellSize - gap * 2,
         cellSize - gap * 2,
       );
-      final RRect rrect =
-          RRect.fromRectAndRadius(cellRect, Radius.circular(radius));
-      final Paint paint = Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: <Color>[
-            Color.lerp(blockColor, Colors.white, 0.3) ?? blockColor,
-            blockColor,
-            Color.lerp(blockColor, Colors.black, 0.2) ?? blockColor,
-          ],
-        ).createShader(cellRect);
-      canvas.drawRRect(rrect, paint);
+      BlockPainter.paintBlock(
+        canvas: canvas,
+        rect: cellRect,
+        color: blockColor,
+        radius: radius,
+      );
     }
   }
 
   @override
-  bool shouldRepaint(covariant PieceDragPainter old) => true;
+  bool shouldRepaint(covariant PieceDragPainter old) {
+    return old.piece != piece ||
+        old.palette != palette ||
+        old.cellSize != cellSize;
+  }
 }
