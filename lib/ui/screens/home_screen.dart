@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/theme_palette.dart';
+import '../../data/models/adventure_progress.dart';
 import '../../data/models/daily_record.dart';
 import '../../data/models/player_stats.dart';
+import '../../game/adventure/adventure_catalog.dart';
 import '../../state/providers.dart';
 import '../painters/background_painter.dart';
 import '../widgets/menu_button.dart';
+import 'adventure_screen.dart';
 import 'daily_screen.dart';
 import 'game_screen.dart';
 import 'settings_screen.dart';
@@ -23,6 +26,9 @@ class HomeScreen extends ConsumerWidget {
     );
     final DailyProgress daily = ref.watch(
       dailyControllerProvider.select((s) => s.progress),
+    );
+    final AdventureProgress adventure = ref.watch(
+      adventureControllerProvider.select((s) => s.progress),
     );
 
     return Scaffold(
@@ -104,6 +110,21 @@ class HomeScreen extends ConsumerWidget {
                         Navigator.of(context).push(
                           MaterialPageRoute<void>(
                             builder: (_) => const DailyScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    MenuButton(
+                      label: 'MACƏRA',
+                      subtitle:
+                          '${adventure.completedLevelIds.length} / ${AdventureCatalog.levelCount} səviyyə  •  ${adventure.totalStars} ulduz',
+                      icon: Icons.auto_awesome_rounded,
+                      palette: palette,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const AdventureScreen(),
                           ),
                         );
                       },
@@ -206,19 +227,31 @@ class _BestScoreCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
-              _MiniStat(label: 'OYUN', value: '${stats.totalGames}', palette: palette),
+              _MiniStat(
+                label: 'OYUN',
+                value: '${stats.totalGames}',
+                palette: palette,
+              ),
               Container(
                 width: 1,
                 height: 28,
                 color: Colors.white.withValues(alpha: 0.1),
               ),
-              _MiniStat(label: 'XƏTT', value: '${stats.totalLines}', palette: palette),
+              _MiniStat(
+                label: 'XƏTT',
+                value: '${stats.totalLines}',
+                palette: palette,
+              ),
               Container(
                 width: 1,
                 height: 28,
                 color: Colors.white.withValues(alpha: 0.1),
               ),
-              _MiniStat(label: 'COMBO', value: '${stats.longestCombo}', palette: palette),
+              _MiniStat(
+                label: 'COMBO',
+                value: '${stats.longestCombo}',
+                palette: palette,
+              ),
             ],
           ),
         ],
