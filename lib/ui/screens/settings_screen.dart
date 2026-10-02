@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/theme_palette.dart';
+import '../../data/models/achievement_progress.dart';
+import '../../data/models/adventure_progress.dart';
 import '../../state/providers.dart';
 import '../painters/background_painter.dart';
 
@@ -20,6 +22,34 @@ class SettingsScreen extends ConsumerWidget {
     final ThemeId currentTheme = ref.watch(
       settingsControllerProvider.select((s) => s.themeId),
     );
+    final AdventureProgress adventure = ref.watch(
+      adventureControllerProvider.select((s) => s.progress),
+    );
+    final AchievementProgress achievements = ref.watch(
+      achievementControllerProvider.select((s) => s.progress),
+    );
+
+    bool isThemeUnlocked(ThemePalette p) {
+      if (p.unlockStarsRequired > 0 &&
+          adventure.totalStars < p.unlockStarsRequired) {
+        return false;
+      }
+      if (p.unlockAchievementId != null &&
+          !achievements.isUnlocked(p.unlockAchievementId!)) {
+        return false;
+      }
+      return true;
+    }
+
+    String unlockLabel(ThemePalette p) {
+      if (p.unlockStarsRequired > 0) {
+        return '${p.unlockStarsRequired} ulduz';
+      }
+      if (p.unlockAchievementId != null) {
+        return 'Nailiyyət';
+      }
+      return '';
+    }
 
     return Scaffold(
       body: Container(
@@ -38,7 +68,7 @@ class SettingsScreen extends ConsumerWidget {
                   painter: BackgroundPainter(palette: palette),
                 ),
               ),
-              Padding(
+              SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -71,26 +101,27 @@ class SettingsScreen extends ConsumerWidget {
                     const SizedBox(height: 24),
                     _SectionTitle(text: 'MÖVZU', palette: palette),
                     const SizedBox(height: 12),
-                    Row(
-                      children: ThemePalette.all.map((p) {
-                        final bool selected = p.id == currentTheme;
-                        return Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: _ThemeChip(
-                              palette: p,
-                              selected: selected,
-                              onTap: () {
-                                ref
-                                    .read(settingsControllerProvider.notifier)
-                                    .updateTheme(p.id);
-                              },
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 28),
+                    ...ThemePalette.all.map((p) {
+                      final bool unlocked = isThemeUnlocked(p);
+                      final bool selected = p.id == currentTheme;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _ThemeRow(
+                          palette: p,
+                          selected: selected,
+                          unlocked: unlocked,
+                          unlockLabel: unlockLabel(p),
+                          onTap: unlocked
+                              ? () {
+                                  ref
+                                      .read(settingsControllerProvider.notifier)
+                                      .updateTheme(p.id);
+                                }
+                              : null,
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 20),
                     _SectionTitle(text: 'TƏTBİQ', palette: palette),
                     const SizedBox(height: 12),
                     _ToggleRow(
@@ -116,7 +147,7 @@ class SettingsScreen extends ConsumerWidget {
                             .toggleSound();
                       },
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 32),
                     Center(
                       child: Text(
                         'Kristal v0.1.0',
@@ -127,7 +158,7 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -162,16 +193,20 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-class _ThemeChip extends StatelessWidget {
-  const _ThemeChip({
+class _ThemeRow extends StatelessWidget {
+  const _ThemeRow({
     required this.palette,
     required this.selected,
+    required this.unlocked,
+    required this.unlockLabel,
     required this.onTap,
   });
 
   final ThemePalette palette;
   final bool selected;
-  final VoidCallback onTap;
+  final bool unlocked;
+  final String unlockLabel;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -179,36 +214,24 @@ class _ThemeChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: palette.backgroundGradient,
-          ),
-          borderRadius: BorderRadius.circular(16),
+          color: selected
+              ? palette.accent.withValues(alpha: 0.15)
+              : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: selected
                 ? palette.accent
-                : Colors.white.withValues(alpha: 0.1),
-            width: selected ? 2.0 : 1.0,
+                : Colors.white.withValues(alpha: 0.08),
+            width: selected ? 1.8 : 1.0,
           ),
-          boxShadow: selected
-              ? <BoxShadow>[
-                  BoxShadow(
-                    color: palette.accent.withValues(alpha: 0.3),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
         ),
-        child: Column(
+        child: Row(
           children: <Widget>[
             Container(
-              width: 32,
-              height: 32,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: <Color>[
@@ -216,19 +239,51 @@ class _ThemeChip extends StatelessWidget {
                     palette.blockColors[2 % palette.blockColors.length],
                   ],
                 ),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: unlocked
+                  ? null
+                  : Icon(
+                      Icons.lock_rounded,
+                      color: Colors.black.withValues(alpha: 0.55),
+                      size: 20,
+                    ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    palette.name,
+                    style: TextStyle(
+                      color: unlocked
+                          ? palette.textPrimary
+                          : palette.textSecondary.withValues(alpha: 0.7),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  if (!unlocked && unlockLabel.isNotEmpty) ...<Widget>[
+                    const SizedBox(height: 2),
+                    Text(
+                      unlockLabel,
+                      style: TextStyle(
+                        color: palette.textSecondary.withValues(alpha: 0.7),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            const SizedBox(height: 10),
-            Text(
-              palette.name,
-              style: TextStyle(
-                color: palette.textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.0,
+            if (selected)
+              Icon(
+                Icons.check_circle_rounded,
+                color: palette.accent,
+                size: 22,
               ),
-            ),
           ],
         ),
       ),
