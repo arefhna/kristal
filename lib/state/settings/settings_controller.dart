@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/services/haptics.dart';
+import '../../core/theme/theme_palette.dart';
 import '../../data/repositories/settings_repository.dart';
 import '../providers.dart';
 import 'settings_state.dart';
@@ -21,7 +22,16 @@ class SettingsController extends Notifier<SettingsState> {
     );
   }
 
-  Future<void> setTheme(ThemeIdHolder value) async {}
+  Future<void> updateTheme(ThemeId id) async {
+    state = state.copyWith(themeId: id);
+    await _repo.save(
+      SettingsData(
+        themeId: id,
+        hapticsEnabled: state.hapticsEnabled,
+        soundEnabled: state.soundEnabled,
+      ),
+    );
+  }
 
   Future<void> toggleHaptics() async {
     final bool next = !state.hapticsEnabled;
@@ -50,20 +60,4 @@ class SettingsController extends Notifier<SettingsState> {
       ),
     );
   }
-
-  Future<void> updateTheme(ThemeIdHolder holder) async {
-    state = state.copyWith(themeId: holder.id);
-    await _repo.save(
-      SettingsData(
-        themeId: holder.id,
-        hapticsEnabled: state.hapticsEnabled,
-        soundEnabled: state.soundEnabled,
-      ),
-    );
-  }
-}
-
-class ThemeIdHolder {
-  const ThemeIdHolder(this.id);
-  final ThemeId id;
 }
