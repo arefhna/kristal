@@ -81,13 +81,17 @@ class GameEngine {
     final Board placedBoard = _board.withCells(absCells, piece.colorIndex);
 
     final LineClearResult clearResult = _clearer.findFullLines(placedBoard);
-    final Board finalBoard =
-        clearResult.hasClears ? _clearer.clear(placedBoard, clearResult) : placedBoard;
+    final Board finalBoard = clearResult.hasClears
+        ? _clearer.clear(placedBoard, clearResult)
+        : placedBoard;
 
-    final bool isFullClear = clearResult.hasClears && finalBoard.isCompletelyEmpty;
+    final bool isFullClear =
+        clearResult.hasClears && finalBoard.isCompletelyEmpty;
 
-    final int newCombo = _scoring.nextComboCount(_combo, clearResult.linesCleared);
-    final int comboForMultiplier = clearResult.linesCleared > 0 ? newCombo : _combo;
+    final int newCombo =
+        _scoring.nextComboCount(_combo, clearResult.linesCleared);
+    final int comboForMultiplier =
+        clearResult.linesCleared > 0 ? newCombo : _combo;
 
     final int gained = _scoring.total(
       cellsPlaced: piece.cellCount,
