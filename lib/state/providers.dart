@@ -4,11 +4,14 @@ import '../core/services/ad_service.dart';
 import '../core/services/sound_service.dart';
 import '../core/services/storage_service.dart';
 import '../core/theme/theme_palette.dart';
+import '../data/repositories/achievement_repository.dart';
 import '../data/repositories/adventure_repository.dart';
 import '../data/repositories/daily_repository.dart';
 import '../data/repositories/game_save_repository.dart';
 import '../data/repositories/settings_repository.dart';
 import '../data/repositories/stats_repository.dart';
+import 'achievements/achievement_controller.dart';
+import 'achievements/achievement_state.dart';
 import 'adventure/adventure_controller.dart';
 import 'adventure/adventure_state.dart';
 import 'daily/daily_controller.dart';
@@ -52,6 +55,10 @@ final adventureRepositoryProvider = Provider<AdventureRepository>((ref) {
   return AdventureRepository(ref.watch(storageServiceProvider));
 });
 
+final achievementRepositoryProvider = Provider<AchievementRepository>((ref) {
+  return AchievementRepository(ref.watch(storageServiceProvider));
+});
+
 final settingsControllerProvider =
     NotifierProvider<SettingsController, SettingsState>(SettingsController.new);
 
@@ -64,6 +71,10 @@ final dailyControllerProvider =
 final adventureControllerProvider =
     NotifierProvider<AdventureController, AdventureState>(
         AdventureController.new);
+
+final achievementControllerProvider =
+    NotifierProvider<AchievementController, AchievementState>(
+        AchievementController.new);
 
 final gameControllerProvider =
     NotifierProvider<GameController, GameState>(GameController.new);
