@@ -41,6 +41,19 @@ class DragInfo {
 }
 
 @immutable
+class ScorePopup {
+  const ScorePopup({
+    required this.value,
+    required this.color,
+    required this.spawnTime,
+  });
+
+  final int value;
+  final Color color;
+  final Duration spawnTime;
+}
+
+@immutable
 class GameState {
   const GameState({
     required this.board,
@@ -53,6 +66,13 @@ class GameState {
     this.drag,
     this.lastGain = 0,
     this.batchKey = 0,
+    this.lastPlacementCells = const <List<int>>[],
+    this.lastPlacementColor,
+    this.lastClearedRows = const <int>{},
+    this.lastClearedCols = const <int>{},
+    this.effectTrigger = 0,
+    this.comboTrigger = 0,
+    this.comboLabel = '',
   });
 
   final Board board;
@@ -65,6 +85,15 @@ class GameState {
   final DragInfo? drag;
   final int lastGain;
   final int batchKey;
+
+  final List<List<int>> lastPlacementCells;
+  final int? lastPlacementColor;
+  final Set<int> lastClearedRows;
+  final Set<int> lastClearedCols;
+
+  final int effectTrigger;
+  final int comboTrigger;
+  final String comboLabel;
 
   factory GameState.empty() {
     return GameState(
@@ -90,6 +119,13 @@ class GameState {
     bool clearDrag = false,
     int? lastGain,
     int? batchKey,
+    List<List<int>>? lastPlacementCells,
+    int? lastPlacementColor,
+    Set<int>? lastClearedRows,
+    Set<int>? lastClearedCols,
+    int? effectTrigger,
+    int? comboTrigger,
+    String? comboLabel,
   }) {
     return GameState(
       board: board ?? this.board,
@@ -102,6 +138,13 @@ class GameState {
       drag: clearDrag ? null : (drag ?? this.drag),
       lastGain: lastGain ?? this.lastGain,
       batchKey: batchKey ?? this.batchKey,
+      lastPlacementCells: lastPlacementCells ?? this.lastPlacementCells,
+      lastPlacementColor: lastPlacementColor ?? this.lastPlacementColor,
+      lastClearedRows: lastClearedRows ?? this.lastClearedRows,
+      lastClearedCols: lastClearedCols ?? this.lastClearedCols,
+      effectTrigger: effectTrigger ?? this.effectTrigger,
+      comboTrigger: comboTrigger ?? this.comboTrigger,
+      comboLabel: comboLabel ?? this.comboLabel,
     );
   }
 
@@ -110,6 +153,13 @@ class GameState {
     DragInfo? drag,
     int? lastGain,
     int? batchKey,
+    List<List<int>>? lastPlacementCells,
+    int? lastPlacementColor,
+    Set<int>? lastClearedRows,
+    Set<int>? lastClearedCols,
+    int? effectTrigger,
+    int? comboTrigger,
+    String? comboLabel,
   }) {
     return GameState(
       board: engine.board,
@@ -122,6 +172,13 @@ class GameState {
       drag: drag,
       lastGain: lastGain ?? 0,
       batchKey: batchKey ?? 0,
+      lastPlacementCells: lastPlacementCells ?? const <List<int>>[],
+      lastPlacementColor: lastPlacementColor,
+      lastClearedRows: lastClearedRows ?? const <int>{},
+      lastClearedCols: lastClearedCols ?? const <int>{},
+      effectTrigger: effectTrigger ?? 0,
+      comboTrigger: comboTrigger ?? 0,
+      comboLabel: comboLabel ?? '',
     );
   }
 }
