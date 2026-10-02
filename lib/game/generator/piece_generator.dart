@@ -1,18 +1,18 @@
 import 'dart:math';
 
 import '../../core/constants/game_constants.dart';
-import '../../core/utils/seeded_random.dart';
 import '../models/board.dart';
 import '../models/piece.dart';
 import '../models/piece_shape.dart';
 import 'piece_weights.dart';
 import 'rescue_logic.dart';
+import 'seeded_adapter.dart';
 
 class PieceGenerator {
   PieceGenerator({
     Random? random,
     RescueLogic? rescueLogic,
-  })  : _random = random ?? createSystemRandom(),
+  })  : _random = random ?? Random(),
         _rescue = rescueLogic ?? RescueLogic();
 
   final Random _random;
@@ -52,9 +52,7 @@ class PieceGenerator {
 
     return List<Piece?>.generate(
       GameConstants.piecesPerBatch,
-      (_) => _makePiece(
-        _weightedName(names, values),
-      ),
+      (_) => _makePiece(_weightedName(names, values)),
       growable: false,
     );
   }
@@ -126,14 +124,5 @@ class PieceGenerator {
 }
 
 class SeededPieceGenerator extends PieceGenerator {
-  SeededPieceGenerator(int seed)
-      : super(
-          random: _buildRandom(seed),
-        );
-
-  static Random _buildRandom(int seed) {
-    final SeededRandom sr = SeededRandom(seed);
-    final int baseSeed = sr.nextInt(0x7FFFFFFF);
-    return Random(baseSeed);
-  }
+  SeededPieceGenerator(int seed) : super(random: seededRandomAdapter(seed));
 }
