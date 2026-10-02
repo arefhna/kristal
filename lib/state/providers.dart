@@ -4,9 +4,12 @@ import '../core/services/ad_service.dart';
 import '../core/services/sound_service.dart';
 import '../core/services/storage_service.dart';
 import '../core/theme/theme_palette.dart';
+import '../data/repositories/daily_repository.dart';
 import '../data/repositories/game_save_repository.dart';
 import '../data/repositories/settings_repository.dart';
 import '../data/repositories/stats_repository.dart';
+import 'daily/daily_controller.dart';
+import 'daily/daily_state.dart';
 import 'game/game_controller.dart';
 import 'game/game_state.dart';
 import 'settings/settings_controller.dart';
@@ -38,11 +41,18 @@ final gameSaveRepositoryProvider = Provider<GameSaveRepository>((ref) {
   return GameSaveRepository(ref.watch(storageServiceProvider));
 });
 
+final dailyRepositoryProvider = Provider<DailyRepository>((ref) {
+  return DailyRepository(ref.watch(storageServiceProvider));
+});
+
 final settingsControllerProvider =
     NotifierProvider<SettingsController, SettingsState>(SettingsController.new);
 
 final statsControllerProvider =
     NotifierProvider<StatsController, StatsState>(StatsController.new);
+
+final dailyControllerProvider =
+    NotifierProvider<DailyController, DailyState>(DailyController.new);
 
 final gameControllerProvider =
     NotifierProvider<GameController, GameState>(GameController.new);
