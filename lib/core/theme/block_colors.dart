@@ -32,4 +32,24 @@ class BlockColors {
     Color(0xFF7A6B9E),
     Color(0xFF5B6B8A),
   ];
+
+  static const List<Color> sunrise = <Color>[
+    Color(0xFFFFB8A0),
+    Color(0xFFFFD4A8),
+    Color(0xFFFFE4B5),
+    Color(0xFFFFC8B8),
+    Color(0xFFFFA8B8),
+    Color(0xFFFFD9C0),
+    Color(0xFFFFBC9E),
+  ];
+
+  static const List<Color> ocean = <Color>[
+    Color(0xFF8FD4E8),
+    Color(0xFF7AC0D8),
+    Color(0xFF6DAFC8),
+    Color(0xFF9DD8E8),
+    Color(0xFF7FC8D8),
+    Color(0xFFB0E0F0),
+    Color(0xFF90C8E0),
+  ];
 }
