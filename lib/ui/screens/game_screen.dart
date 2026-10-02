@@ -23,7 +23,10 @@ import '../widgets/piece_tray.dart';
 import '../widgets/score_display.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
-  const GameScreen({super.key, this.mode = GameMode.classic});
+  const GameScreen({
+    super.key,
+    this.mode = GameMode.classic,
+  });
 
   final GameMode mode;
 
@@ -121,6 +124,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     final controller = ref.read(gameControllerProvider.notifier);
     final DragInfo? drag = ref.read(gameControllerProvider).drag;
     if (drag == null) return;
+    if (_cellSize <= 0) return;
 
     final double lift = _cellSize * 1.15;
     final double pieceLeft = pointer.dx - (drag.piece.width * _cellSize) / 2;
@@ -224,7 +228,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
     if (!s.isGameOver || _statsRecorded) return;
     _statsRecorded = true;
 
-    final int lines = ref.read(gameControllerProvider.notifier).engine.totalLines;
+    final int lines =
+        ref.read(gameControllerProvider.notifier).engine.totalLines;
 
     await ref.read(statsControllerProvider.notifier).recordGameEnd(
           score: s.score,
