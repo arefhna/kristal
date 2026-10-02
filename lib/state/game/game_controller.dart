@@ -11,6 +11,8 @@ import 'game_state.dart';
 class GameController extends Notifier<GameState> {
   late final GameEngine _engine;
   int _batchKeyCounter = 0;
+  int _effectTrigger = 0;
+  int _comboTrigger = 0;
 
   @override
   GameState build() {
@@ -24,7 +26,14 @@ class GameController extends Notifier<GameState> {
   void restart() {
     _engine.start();
     _batchKeyCounter++;
-    state = GameState.fromEngine(_engine, batchKey: _batchKeyCounter);
+    _effectTrigger++;
+    _comboTrigger++;
+    state = GameState.fromEngine(
+      _engine,
+      batchKey: _batchKeyCounter,
+      effectTrigger: _effectTrigger,
+      comboTrigger: _comboTrigger,
+    );
   }
 
   void onDragStart({
@@ -88,30 +97,58 @@ class GameController extends Notifier<GameState> {
       return null;
     }
 
-    final bool batchRefilled = _engine.currentBatch.every((p) => p != null) &&
-        state.batch.every((p) => p == null || p!.id != _engine.currentBatch.first!.id);
-
-    if (batchRefilled) {
-      _batchKeyCounter++;
-    }
-
     if (result.linesCleared > 0) {
       Haptics.medium();
     } else {
       Haptics.light();
     }
-
     if (result.isFullClear) {
       Haptics.heavy();
+    }
+
+    final List<List<int>> placedCells =
+        current.piece.absoluteCells(ghostRow, ghostCol);
+
+    _effectTrigger++;
+
+    String comboLabel = '';
+    if (result.comboCount >= 2) {
+      _comboTrigger++;
+      comboLabel = _labelForCombo(result.comboCount);
+    }
+
+    final bool batchRefilled = _engine.currentBatch.every((p) => p != null) &&
+        state.batch.every(
+          (p) => p == null || p!.id != _engine.currentBatch.first!.id,
+        );
+
+    if (batchRefilled) {
+      _batchKeyCounter++;
     }
 
     state = GameState.fromEngine(
       _engine,
       lastGain: result.totalScore,
       batchKey: _batchKeyCounter,
+      lastPlacementCells: placedCells,
+      lastPlacementColor: current.piece.colorIndex,
+      lastClearedRows: result.clearedRows,
+      lastClearedCols: result.clearedCols,
+      effectTrigger: _effectTrigger,
+      comboTrigger: _comboTrigger,
+      comboLabel: comboLabel,
     );
 
     return result;
+  }
+
+  String _labelForCombo(int combo) {
+    if (combo <= 1) return '';
+    if (combo == 2) return 'YAXŞI';
+    if (combo == 3) return 'ƏLA';
+    if (combo == 4) return 'MÖHTƏŞƏM';
+    if (combo == 5) return 'İNANILMAZ';
+    return 'EFSANE';
   }
 
   Board get board => _engine.board;
