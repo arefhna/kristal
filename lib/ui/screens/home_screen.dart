@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/theme_palette.dart';
+import '../../data/models/achievement_progress.dart';
 import '../../data/models/adventure_progress.dart';
 import '../../data/models/daily_record.dart';
 import '../../data/models/player_stats.dart';
+import '../../game/achievements/achievement_catalog.dart';
 import '../../game/adventure/adventure_catalog.dart';
 import '../../state/providers.dart';
 import '../painters/background_painter.dart';
 import '../widgets/menu_button.dart';
+import 'achievements_screen.dart';
 import 'adventure_screen.dart';
 import 'daily_screen.dart';
 import 'game_screen.dart';
@@ -29,6 +32,9 @@ class HomeScreen extends ConsumerWidget {
     );
     final AdventureProgress adventure = ref.watch(
       adventureControllerProvider.select((s) => s.progress),
+    );
+    final AchievementProgress achievements = ref.watch(
+      achievementControllerProvider.select((s) => s.progress),
     );
 
     return Scaffold(
@@ -125,6 +131,21 @@ class HomeScreen extends ConsumerWidget {
                         Navigator.of(context).push(
                           MaterialPageRoute<void>(
                             builder: (_) => const AdventureScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    MenuButton(
+                      label: 'NAİLİYYƏTLƏR',
+                      subtitle:
+                          '${achievements.unlockedCount} / ${AchievementCatalog.total} açıldı',
+                      icon: Icons.emoji_events_rounded,
+                      palette: palette,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const AchievementsScreen(),
                           ),
                         );
                       },
