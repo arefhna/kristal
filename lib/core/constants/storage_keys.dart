@@ -27,5 +27,8 @@ class StorageKeys {
   static const String adventureProgress = 'adventure_progress';
   static const String adventureStarsTotal = 'adventure_stars_total';
 
+  static const String achievementsUnlocked = 'achievements_unlocked';
+  static const String achievementsSeen = 'achievements_seen';
+
   static String dailyScoreForDate(String dateKey) => 'daily_score_$dateKey';
 }
