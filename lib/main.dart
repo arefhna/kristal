@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/services/storage_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_palette.dart';
-import 'ui/screens/game_screen.dart';
+import 'state/providers.dart';
+import 'state/settings/settings_state.dart';
+import 'ui/screens/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,19 +23,32 @@ Future<void> main() async {
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
-  runApp(const ProviderScope(child: KristalApp()));
+
+  final StorageService storage = await StorageService.create();
+
+  runApp(
+    ProviderScope(
+      overrides: <Override>[
+        storageServiceProvider.overrideWithValue(storage),
+      ],
+      child: const KristalApp(),
+    ),
+  );
 }
 
-class KristalApp extends StatelessWidget {
+class KristalApp extends ConsumerWidget {
   const KristalApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final SettingsState settings = ref.watch(settingsControllerProvider);
+    final ThemePalette palette = ThemePalette.byId(settings.themeId);
+
     return MaterialApp(
       title: 'Kristal',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.fromPalette(ThemePalette.kristal),
-      home: const GameScreen(),
+      theme: AppTheme.fromPalette(palette),
+      home: const SplashScreen(),
     );
   }
 }
