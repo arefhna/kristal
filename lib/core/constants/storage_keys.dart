@@ -24,5 +24,8 @@ class StorageKeys {
   static const String dailyLastPlayedDate = 'daily_last_played_date';
   static const String dailyTotalPlayed = 'daily_total_played';
 
+  static const String adventureProgress = 'adventure_progress';
+  static const String adventureStarsTotal = 'adventure_stars_total';
+
   static String dailyScoreForDate(String dateKey) => 'daily_score_$dateKey';
 }
